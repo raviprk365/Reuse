@@ -1,0 +1,143 @@
+function main(workbook: ExcelScript.Workbook): void {
+    let jsonResult: string = "";
+
+    const tables: ExcelScript.Table[] = workbook.getTables();
+    if (tables.length > 0) {
+        // If multiple tables exist, convert each table separately
+        jsonResult = JSON.stringify(tables.map(table => tableToJson(table)));
+    } else {
+        const sheets: ExcelScript.Worksheet[] = workbook.getWorksheets();
+        for (let i = 0; i < sheets.length; i++) {
+            const json: string | null = sheetRangeToJson(sheets[i]);
+            if (json !== null) {
+                jsonResult = json;
+                break;
+            }
+        }
+    }
+
+    if (jsonResult === "") {
+        jsonResult = JSON.stringify({ error: "No table or structured data found." });
+    }
+
+    // Create or get output sheet
+    let outSheet = workbook.getWorksheet("JSON_Output");
+    if (!outSheet) {
+        outSheet = workbook.addWorksheet("JSON_Output");
+    }
+
+    outSheet.getRange("A1").setValue(jsonResult);
+}
+
+/* ==================== TABLE TO JSON ==================== */
+
+function tableToJson(table: ExcelScript.Table): string {
+    const headers: string[] = rangeRowToStringArray(table.getHeaderRowRange());
+    const dataRange = table.getRangeBetweenHeaderAndTotal();
+    const values: (string | number | boolean | Date)[][] = dataRange.getValues();
+
+    const rows: { [key: string]: { value: string; dataType: string } }[] = [];
+
+    for (let r = 0; r < values.length; r++) {
+        const obj: { [key: string]: { value: string; dataType: string } } = {};
+        for (let c = 0; c < headers.length; c++) {
+            const key: string = headers[c] || `Column${c + 1}`;
+            const val = values[r][c];
+            const type: string = getDataType(val); // Get the type of the cell value
+
+            obj[key] = {
+                value: val === null || val === undefined ? "" : val.toString(),
+                dataType: type
+            };
+        }
+        rows.push(obj);
+    }
+
+    return JSON.stringify(rows, null, 2); // pretty JSON
+}
+
+/* ==================== SHEET RANGE TO JSON ==================== */
+
+function sheetRangeToJson(ws: ExcelScript.Worksheet): string | null {
+    const used: ExcelScript.Range | undefined = ws.getUsedRange();
+    if (!used) return null;
+
+    const values: (string | number | boolean | Date)[][] = used.getValues();
+    if (values.length < 2) return null;
+
+    const headerRowIndex: number = detectHeaderRowIndex(values);
+    const headers: string[] = values[headerRowIndex].map(v =>
+        v === null || v === undefined ? "" : v.toString()
+    );
+
+    const rows: { [key: string]: { value: string; dataType: string } }[] = [];
+
+    for (let r = headerRowIndex + 1; r < values.length; r++) {
+        let empty = true;
+        const obj: { [key: string]: { value: string; dataType: string } } = {};
+
+        for (let c = 0; c < headers.length; c++) {
+            const key: string = headers[c] || `Column${c + 1}`;
+            const val = values[r][c];
+            const str: string = val === null || val === undefined ? "" : val.toString();
+            const type: string = getDataType(val); // Get the type of the cell value
+            if (str !== "") empty = false;
+            obj[key] = {
+                value: str,
+                dataType: type
+            };
+        }
+
+        if (!empty) rows.push(obj);
+    }
+
+    return rows.length > 0 ? JSON.stringify(rows, null, 2) : null;
+}
+
+/* ==================== HELPERS ==================== */
+
+// Convert range's first row into an array of strings
+function rangeRowToStringArray(range: ExcelScript.Range): string[] {
+    const vals: (string | number | boolean | Date)[][] = range.getValues() as (string | number | boolean | Date)[][];
+    const row = vals[0];
+    const out: string[] = [];
+
+    for (let i = 0; i < row.length; i++) {
+        const v = row[i];
+        out.push(v === null || v === undefined ? "" : v.toString());
+    }
+    return out;
+}
+
+// Detect the data type of a cell value
+function getDataType(value: string | number | boolean | Date | null | undefined): string {
+    if (value === null || value === undefined) return "Null";
+
+    if (typeof value === "string") return "String";
+    if (typeof value === "number") return "Number";
+    if (typeof value === "boolean") return "Boolean";
+
+    // Check if it's a Date
+    if (value instanceof Date) return "Date";
+
+    return "Unknown"; // Default if no type matched
+}
+
+// Heuristic: find the row with most text-like cells for the header
+function detectHeaderRowIndex(values: (string | number | boolean | Date)[][]): number {
+    let bestRow = 0;
+    let bestScore = -1;
+
+    for (let r = 0; r < values.length; r++) {
+        let score = 0;
+        for (let c = 0; c < values[r].length; c++) {
+            const s = values[r][c] === null || values[r][c] === undefined ? "" : values[r][c].toString().trim();
+            if (s.length > 0 && isNaN(Number(s))) score++;
+        }
+        if (score > bestScore) {
+            bestScore = score;
+            bestRow = r;
+        }
+    }
+    return bestRow;
+}
