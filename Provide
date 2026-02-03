@@ -1,0 +1,74 @@
+Below is an agentic-development evaluation of the pro-code alternatives I listed earlier — using a practical lens: Can this component support autonomous agents that plan, call tools, keep state, coordinate with other agents (A2A), plug into MCP tool servers, and run safely in production (evals, guardrails, observability, cost control)?
+
+Agentic development evaluation (Microsoft pro-code stack)
+
+Component (pro-code alternative)	Agentic “fit” (High/Med/Low)	Where it sits in an agentic system	Tool calling & MCP readiness	State / memory support	Human-in-the-loop (approvals)	Production safety (policy, evals, guardrails)	Observability & cost control	Notes for agentic dev
+ASP.NET Core + Blazor/MVC	Med	Human UI + admin consoles	Indirect (calls agent API / tool layer)	App-level state only	Strong (review UI, override UI)	Via backend enforcement	Strong with proper instrumentation	Use for operator cockpit: review agent plans, approve actions, audit trails. Not where “agent brain” should live.
+React/Next.js + .NET APIs	Med	UX + orchestration UI + API	Indirect (front-end calls controlled API)	App-level	Strong	Via API gateway + backend	Strong	Same as above: best for polished UI + secure API boundary. Keep agent keys server-side only.
+Azure Durable Functions	High	Agent workflow orchestrator (planner-executor loops)	Strong (wrap tools as activities; easy MCP adapters)	Strong (durable state, replay, checkpoints)	Strong (pause/await approval)	Good (deterministic steps, retries)	Good	Excellent for “agent run lifecycle”: plan → tool calls → verify → escalate → finalize.
+Azure Functions + Event Grid / Service Bus	High	Tool runtime + event-driven actions	Strong (each tool as function; MCP server endpoints)	Medium (externalize state)	Medium	Good (policy enforcement in functions)	Good	Ideal for tool endpoints (search, CRM update, file ops). Pair with Durable for stateful runs.
+Azure Logic Apps (Standard)	Med	Connector-heavy integration tasks	Medium (connectors help, but MCP not native)	Low/Med	Medium	Medium	Medium	Great for quick enterprise integrations, but for agentic loops & versioned tool contracts, Functions are cleaner.
+Azure API Management (APIM)	High	Agent gateway (policy & governance layer)	High (standardize tool APIs; can front MCP servers)	N/A	N/A	High (auth, rate limits, schema validation, quotas)	High	Treat APIM as the “tool firewall” for agents: token control, quotas, allowlists, versioning.
+Azure AI Search + RAG API	High	Grounding / retrieval tool	High (classic tool call; MCP wrapper is straightforward)	Medium (store conversation facts separately)	N/A	Medium/High (filters, citations, RBAC)	Medium	Strong grounding component. For agentic dev, enforce tenant filters, source allowlists, citation required.
+Azure OpenAI (models/embeddings)	High	Reasoning + tool calling	N/A (it is the model)	N/A	N/A	Medium (needs guardrails around it)	Medium/High (token cost)	Put it behind a policy layer (APIM / middleware). Add evals + prompt/version control.
+Azure AI Foundry Agent Service (or pro-code orchestration)	High	Agent runtime (tools, sessions, policies)	High (first-class “tools” concept; MCP patterns fit well)	High (sessions, tool traces; depends on config)	Medium/High	High (policy hooks + governance patterns)	Medium/High	Best “Copilot Studio alternative” if you still want an agent platform but in pro-code form.
+Microsoft Bot Framework	High	Conversation channel layer	High (skills/tools; can proxy MCP tools)	Medium (state store)	Medium/High	Medium/High	Medium	Still a solid pro-code chat platform. Use for Teams/web chat with strong control.
+Entra External ID / Azure AD B2C	Med	Identity boundary (customers)	N/A	N/A	N/A	High (auth, CA, MFA)	N/A	Critical for paid/tenant apps. Agentic systems need strict identity and per-tenant authorization.
+Dynamics 365 + pro-code extensions	Med	System-of-record tool	Medium (via Dataverse APIs)	N/A	High	Medium/High	Medium	Good “tool target”. Keep agent writes behind approvals + business rules.
+Azure AI Document Intelligence + Functions	High	Doc extraction tool	High (call as tool; MCP wrapper easy)	N/A	Medium	Medium/High (validation)	Medium	Perfect as an agent tool: “extract → validate → classify → route”.
+Application Insights + Azure Monitor + OpenTelemetry	High	Observability	N/A	N/A	N/A	High (auditability via traces/logs)	High	Agentic dev requires tool-call traces, prompt/model version logging, cost per run, failure reasons.
+Microsoft Fabric (Lakehouse/Warehouse)	Med	Analytics + offline eval datasets	Indirect	High (data store)	N/A	Medium	Medium	Great for: telemetry analytics, eval datasets, drift detection, quality dashboards. Not the runtime brain.
+Azure Data Factory / Fabric Data Factory	Med	Batch ingestion pipelines	Indirect	Medium	N/A	Medium	Medium	Use to feed RAG corpora + tool data. Not ideal for interactive agent loops.
+
+
+⸻
+
+What “agentic development” changes (compared to classic app dev)
+
+Agentic systems need two extra layers that normal apps don’t:
+	1.	Tool Contract Layer
+
+	•	Tools must be clean, versioned APIs (OpenAPI), with RBAC + tenant scoping, and safe defaults.
+	•	APIM + Functions is the strongest combo here.
+	•	MCP fits naturally as “tool servers” — but you still want APIM-like governance in front.
+
+	2.	Run Lifecycle Layer (state + safety)
+
+	•	Agents run in steps: plan → act → verify → retry/escalate → commit.
+	•	This is where Durable Functions shines (state, checkpoints, human approval, retries).
+
+⸻
+
+Best “pro-code agentic stack” (the clean default)
+
+If you want the closest pro-code replacement for Power Platform/Copilot Studio with agentic capability, this is the most robust pattern:
+	•	Conversation/UI: React/Next.js (web) and/or Bot Framework (Teams/chat)
+	•	Agent runtime: Azure AI Foundry Agent Service (or your own orchestrator)
+	•	Stateful orchestration: Azure Durable Functions
+	•	Tools: Azure Functions (each tool is a function)
+	•	Tool governance: Azure API Management (quotas, auth, schema validation, versioning)
+	•	Grounding: Azure AI Search + curated ingestion
+	•	Identity: Entra External ID / Azure AD B2C
+	•	Telemetry & cost: App Insights + Azure Monitor + OpenTelemetry
+	•	Analytics & eval datasets: Fabric (optional but powerful)
+
+⸻
+
+Quick recommendation by “agent maturity level”
+
+Your goal	Recommended approach
+“I want Copilot Studio-like speed, but pro-code”	Azure AI Foundry Agent Service + Functions tools + APIM
+“I want maximum control + deterministic workflows”	Durable Functions orchestrator + Functions tools + APIM + RAG API
+“I want multi-agent (A2A) coordination”	Use Durable as the coordinator + message bus (Service Bus) between specialist agents; standardize tool access via APIM
+“I want MCP-ready tools”	Implement tool endpoints as Functions, expose via APIM, optionally host MCP servers as a façade that maps to the same APIs
+
+
+⸻
+
+If you tell me your target scenario (e.g., paid healthcare RAG agent, approval automation, Excel extraction agent), I’ll produce a single reference architecture with:
+	•	agent roles (planner/executor/verifier),
+	•	tool list + contracts,
+	•	MCP mapping,
+	•	A2A coordination,
+	•	governance controls (tenant isolation, PHI boundaries), and
+	•	observability + cost per run.
