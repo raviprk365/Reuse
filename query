@@ -1,1 +1,34 @@
+Set(genDetailsVisible,false);Set(
+    varGeneratedResults,
+    {
+        company_name: "ServiceNow",
+        search_date: Date(2026, 2, 9),
+        search_period: "Last 12 months",
+        any_relevant_issues: "Yes",
+        summary: "ServiceNow has experienced governance-related issues including a compliance violation related to government contract procurement and an ERISA-related class action settlement, but no material negative ESG news, environmental incidents, or direct regulatory breaches with fines.",
+        findings: Table(
+            {
+                category: "Material negative ESG news",
+                is_relevant: "No",
+                details: "ServiceNow published its Global Impact Report 2024 showing continued progress on ESG goals. The company maintains carbon-neutral cloud operations and reports transparently on environmental, social, and governance metrics with third-party verification.",
+                incident_date: "N/A",
+                severity: "N/A"
+            },
+            {
+                category: "Environmental incidents",
+                is_relevant: "No",
+                details: "No environmental incidents found. ServiceNow continues to achieve 100% renewable electricity across operations and maintains environmental sustainability policies with third-party GHG emissions verification.",
+                incident_date: "N/A",
+                severity: "N/A"
+            },
+            {
+                category: "License or regulatory breaches",
+                is_relevant: "Yes",
+                details: "ServiceNow experienced two compliance-related issues: (1) Internal investigation found violations of company policy in the hiring of former Army CIO Raj Iyer following a large government contract award, resulting in the departure of President/COO CJ Desai and Public Sector head Raj Iyer; (2) $925,000 settlement of ERISA class action lawsuit alleging breach of fiduciary duties related to 401(k) plan management (American Century target-date funds). Note: A security vulnerability (CVE-2025-3648) was also disclosed but was responsibly addressed with a patch.",
+                incident_date: Date(2024, 7, 24),
+                severity: "Medium"
+            }
+        )
+    }
+)
 
