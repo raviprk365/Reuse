@@ -9,3 +9,30 @@ https://www.microsoft.com/en-us/power-platform/blog/power-apps/introducing-test-
 https://github.com/microsoft/PowerApps-TestEngine/blob/main/docs/Yaml/test.md#networkrequestmocks
 
 https://github.com/microsoft/PowerApps-TestEngine/blob/main/docs/PowerFX/README.md
+
+Set(varSpinnerVisible,true);Set(genDetailsVisible,false);Set(genResponse,'PowerAppV2->ExecuteAgentandwait,RespondtoaPowerApporflow'.Run(TextInputCanvas1.Value).json_response); Set(genDetailsVisible,true);Set(varParsedGenResponse,ParseJSON(genResponse));Set(varSpinnerVisible,false);
+ClearCollect(
+    colHeader,
+    {
+        company_name: Text(varParsedGenResponse.company_name),
+        search_date: Text(varParsedGenResponse.search_date),
+        search_period: Text(varParsedGenResponse.search_period),
+        any_relevant_issues: Text(varParsedGenResponse.any_relevant_issues),
+        summary: Text(varParsedGenResponse.summary)
+    }
+);
+ClearCollect(
+    colFindings,
+    ForAll(
+        varParsedGenResponse.findings,
+        {
+            category: Text(ThisRecord.category),
+            is_relevant: Text(ThisRecord.is_relevant),
+            details: Text(ThisRecord.details),
+            incident_date: Text(ThisRecord.incident_date),
+            severity: Text(ThisRecord.severity)
+        }
+    )
+);
+
+
