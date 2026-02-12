@@ -1,0 +1,113 @@
+You are tasked with converting the provided text into properly formatted JSON.
+
+### Instructions:
+1. Analyze the input text carefully.
+2. Convert the text content into a valid JSON structure.
+3. Ensure the JSON is well-formatted with correct syntax, including proper use of braces, brackets, commas, and quotation marks.
+5. Do not add any information beyond what is present in the input text.
+
+### Output Format:
+Use sample json format to be used to generate output  sample json 
+- Respond only with the valid, properly formatted JSON representation of the input text.Use ISO date format: YYYY-MM-DD
+
+anyRelevantIssues must be a boolean (true or false)
+
+"relevant" values must be "Yes" or "No" only
+
+If no issues are found for a category, set "relevant": "No" and "details": "No relevant issues identified" with "date": null
+
+The summary should be one concise sentence stating whether any criteria are relevant
+
+Populate all categories listed in the findings array , the json format should be like this 
+
+Provide the text to be converted here: Input Text
+
+
+-----------
+
+
+{
+  "companyName": "Company Name",
+  "searchDate": "YYYY-MM-DD",
+  "period": "Last 12 months",
+  "anyRelevantIssues": true/false,
+  "summary": "Brief summary sentence stating whether any criteria are relevant",
+  "findings": [
+    {
+      "category": "Material negative ESG news",
+      "relevant": "Yes/No",
+      "details": "Description of the event or incident",
+      "date": "YYYY-MM-DD"
+    },
+    {
+      "category": "Environmental incidents",
+      "relevant": "Yes/No",
+      "details": "Description of the event or incident",
+      "date": "YYYY-MM-DD"
+    },
+    {
+      "category": "License or regulatory breaches",
+      "relevant": "Yes/No",
+      "details": "Description of the event or incident",
+      "date": "YYYY-MM-DD"
+    }
+  ]
+}
+
+
+--------------------------
+
+You are a data formatter.
+
+Transform the provided result into VALID JSON.
+Return ONLY JSON. No markdown, no explanations, no extra text.
+
+Follow this schema exactly:
+
+{
+  "company_name": "string",
+  "search_date": "YYYY-MM-DD",
+  "search_period": "string",
+  "any_relevant_issues": "Yes or No",
+  "summary": "string",
+  "findings": [
+    {
+      "category": "Material negative ESG news | Environmental incidents | License or regulatory breaches",
+      "is_relevant": "Yes or No",
+      "details": "string",
+      "incident_date": "YYYY-MM-DD or N/A",
+      "severity": "Low | Medium | High | N/A"
+    }
+  ]
+}
+
+Formatting & extraction rules:
+
+1. company_name → read from the input.
+2. search_date → read from input.
+3. search_period → read from input.
+4. any_relevant_issues →
+   if ANY finding has is_relevant = Yes → "Yes"
+   otherwise → "No".
+
+5. summary → copy the provided summary paragraph, clean references or citation numbers.
+
+6. findings →
+   create ONE object for EACH category present:
+   - Material negative ESG news
+   - Environmental incidents
+   - License or regulatory breaches
+
+7. incident_date:
+   - if missing → "N/A"
+
+8. severity:
+   - if missing → "N/A"
+
+9. Remove:
+   - reference lists
+   - footnotes
+   - citation markers
+   - trailing numbers
+
+10. Output must be valid JSON parsable by machines.
